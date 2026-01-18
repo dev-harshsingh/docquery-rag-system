@@ -2,8 +2,8 @@ from flask import Flask, request, jsonify
 from ingest import load_document
 from chunking import chunk_document
 from embeddings import get_embedding_model
-from vector_store import build_faiss_index,save_faiss_index
-
+from vector_store import build_faiss_index,save_faiss_index, load_faiss_index
+from llm import generate_answer
 
 
 embedding_model = get_embedding_model()
@@ -48,6 +48,7 @@ def ingest_document():
         return jsonify({"error": str(e)}), 500
 from vector_store import load_faiss_index
 
+#ask question
 @app.route("/query", methods=["POST"])
 def query_document():
     data = request.get_json()
@@ -58,27 +59,30 @@ def query_document():
     question = data["question"]
 
     try:
-        # Load FAISS index 
+        #  Load FAISS index
         vector_store = load_faiss_index(embedding_model)
 
-        #  similarity search
-        results = vector_store.similarity_search(
+        # Retrieve relevant chunks
+        docs = vector_store.similarity_search(
             query=question,
             k=3
         )
 
-        # response
-        response = []
-        for i, doc in enumerate(results):
-            response.append({
-                "rank": i + 1,
-                "content": doc.page_content,
-                "metadata": doc.metadata
-            })
+        context_chunks = [doc.page_content for doc in docs]
+
+        # Generate answer using Gemini
+        answer = generate_answer(context_chunks, question)
 
         return jsonify({
             "question": question,
-            "results": response
+            "answer": answer,
+            "sources": [
+                {
+                    "page": doc.metadata.get("page"),
+                    "source": doc.metadata.get("source")
+                }
+                for doc in docs
+            ]
         })
 
     except Exception as e:

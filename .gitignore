@@ -1,0 +1,14 @@
+# Python
+venv/
+__pycache__/
+.env
+faiss_index/
+
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+
+*.pdf

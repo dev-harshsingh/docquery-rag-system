@@ -7,7 +7,7 @@ faiss_index/
 
 # Node
 node_modules/
-
+backend/uploads/
 # OS
 .DS_Store
 
